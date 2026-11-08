@@ -90,11 +90,6 @@
         <input type="text" inputmode="numeric" id="repsValInput" placeholder="回数 (rep)">
         <button onclick="addSetToWorkout()">セット追加</button>
       </div>
-      <div id="currentWorkoutPreview" style="background: #f8f9fa; padding: 10px; border-radius: 6px; margin-top: 8px; font-size: 0.85rem; display:none;">
-        <div style="font-weight: bold; margin-bottom: 4px;" id="previewTitle"></div>
-        <ul id="previewSets" style="margin:0; padding-left:16px;"></ul>
-        <button style="background: #27ae60; width: 100%; margin-top: 8px;" onclick="saveWorkoutSession()">ノートに記入する</button>
-      </div>
     </div>
 
     <div class="card">
@@ -109,9 +104,6 @@
 
     let data = JSON.parse(localStorage.getItem('myFitData')) || {};
     if (!data[today]) data[today] = { weight: '', fat: '', workouts: [] };
-
-    let activeWorkoutName = '';
-    let activeSets = [];
 
     let periods = { weight: 7 };
     let chartW = null;
@@ -140,7 +132,6 @@
       document.getElementById('weightInput').value = todayData.weight || '';
       document.getElementById('fatInput').value = todayData.fat || '';
 
-      // 本日の筋トレノート描画
       const container = document.getElementById('todayWorkoutList');
       if (!todayData.workouts || todayData.workouts.length === 0) {
         container.innerHTML = '<p style="color: #888; font-size: 0.85rem; text-align: center; margin: 12px 0;">まだノートの記録はありません</p>';
@@ -192,6 +183,7 @@
       }
     }
 
+    // 「セット追加」を押すだけで直ちにノートに反映・追加される仕様
     function addSetToWorkout() {
       const name = document.getElementById('workoutNameInput').value.trim();
       const weight = document.getElementById('weightValInput').value.trim();
@@ -200,36 +192,24 @@
       if (!name) { alert('種目名を入力してください'); return; }
       if (!weight || !reps) { alert('重量と回数を入力してください'); return; }
 
-      if (activeWorkoutName !== name) {
-        activeWorkoutName = name;
-        activeSets = [];
+      if (!data[today].workouts) data[today].workouts = [];
+
+      // 同じ種目がすでに今日のリストにあるか探す
+      let existingWorkout = data[today].workouts.find(w => w.name === name);
+
+      if (existingWorkout) {
+        // あればその種目にセットを追加
+        existingWorkout.sets.push({ weight: weight, reps: reps });
+      } else {
+        // なければ新しく種目を作成して追加
+        data[today].workouts.push({
+          name: name,
+          sets: [{ weight: weight, reps: reps }]
+        });
       }
 
-      activeSets.push({ weight: weight, reps: reps });
-
-      document.getElementById('currentWorkoutPreview').style.display = 'block';
-      document.getElementById('previewTitle').innerText = `記入中: ${activeWorkoutName}`;
-      document.getElementById('previewSets').innerHTML = activeSets.map((s, i) => `<li>${i + 1}set: ${s.weight}kg × ${s.reps}回</li>`).join('');
-
+      // 回数だけクリアして、重量と種目名は次のセットのために残す
       document.getElementById('repsValInput').value = '';
-    }
-
-    function saveWorkoutSession() {
-      if (activeSets.length === 0) return;
-
-      if (!data[today].workouts) data[today].workouts = [];
-      data[today].workouts.push({
-        name: activeWorkoutName,
-        sets: [...activeSets]
-      });
-
-      activeSets = [];
-      activeWorkoutName = '';
-      document.getElementById('currentWorkoutPreview').style.display = 'none';
-      document.getElementById('workoutNameInput').value = '';
-      document.getElementById('weightValInput').value = '';
-      document.getElementById('repsValInput').value = '';
-
       render();
     }
 
