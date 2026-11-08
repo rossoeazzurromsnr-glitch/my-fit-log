@@ -29,7 +29,7 @@
     .btn-delete { background: #e74c3c; padding: 4px 8px; font-size: 0.75rem; margin-left: 4px; }
     ul { list-style: none; padding: 0; margin: 0; }
     li { padding: 8px 0; border-bottom: 1px dashed #eee; font-size: 0.9rem; display: flex; justify-content: space-between; align-items: center; }
-    .chart-container { position: relative; height: 200px; width: 100%; margin-top: 10px; }
+    .chart-container { position: relative; height: 180px; width: 100%; margin-top: 10px; }
     .action-btns { display: flex; gap: 4px; }
   </style>
 </head>
@@ -45,16 +45,8 @@
     <button class="tab-btn" onclick="switchTab(2)">🏋️ 運動・消費</button>
   </div>
 
-  <!-- グラフ（常時表示） -->
-  <div class="card">
-    <h2>📈 推移グラフ</h2>
-    <div class="chart-container">
-      <canvas id="fitChart"></canvas>
-    </div>
-  </div>
-
   <!-- 項目1: 体重・体脂肪率 -->
-  <div id="tab1" class="tab-content active">
+  <div id="tab0" class="tab-content active">
     <div class="card">
       <h2>⚖️ 体重・体脂肪率の記録</h2>
       <div class="input-row">
@@ -66,10 +58,14 @@
         <button style="background: #95a5a6;" onclick="clearBodyData()">リセット</button>
       </div>
     </div>
+    <div class="card">
+      <h2>📈 体重・体脂肪率の推移</h2>
+      <div class="chart-container"><canvas id="chartWeight"></canvas></div>
+    </div>
   </div>
 
   <!-- 項目2: 食事・摂取カロリー -->
-  <div id="tab2" class="tab-content">
+  <div id="tab1" class="tab-content">
     <div class="card">
       <h2>🥗 食事メモ & 摂取カロリー</h2>
       <div class="input-row">
@@ -82,10 +78,14 @@
       </div>
       <ul id="mealList"></ul>
     </div>
+    <div class="card">
+      <h2>📈 摂取カロリーの推移</h2>
+      <div class="chart-container"><canvas id="chartCalorie"></canvas></div>
+    </div>
   </div>
 
   <!-- 項目3: 運動・消費カロリー -->
-  <div id="tab3" class="tab-content">
+  <div id="tab2" class="tab-content">
     <div class="card">
       <h2>🏋️ 運動記録 & 消費カロリー</h2>
       <div class="input-row">
@@ -99,6 +99,10 @@
       </div>
       <ul id="workoutList"></ul>
     </div>
+    <div class="card">
+      <h2>📈 消費カロリーの推移</h2>
+      <div class="chart-container"><canvas id="chartBurn"></canvas></div>
+    </div>
   </div>
 
   <script>
@@ -108,9 +112,8 @@
     let data = JSON.parse(localStorage.getItem('myFitData')) || {};
     if (!data[today]) data[today] = { weight: '', fat: '', calories: '', burnCalories: '', meals: [], workouts: [] };
 
-    let myChart = null;
+    let chartW = null, chartC = null, chartB = null;
 
-    // タブ切り替え
     function switchTab(index) {
       const tabs = document.querySelectorAll('.tab-content');
       const btns = document.querySelectorAll('.tab-btn');
@@ -118,6 +121,8 @@
         tab.classList.toggle('active', i === index);
         btns[i].classList.toggle('active', i === index);
       });
+      // タブ切り替え時にグラフ描画を再調整
+      setTimeout(updateCharts, 50);
     }
 
     function render() {
@@ -128,7 +133,6 @@
       document.getElementById('calorieInput').value = todayData.calories || '';
       document.getElementById('burnCalorieInput').value = todayData.burnCalories || '';
 
-      // 食事リスト
       const mealList = document.getElementById('mealList');
       mealList.innerHTML = (todayData.meals || []).map((m, index) => `
         <li>
@@ -140,7 +144,6 @@
         </li>
       `).join('');
 
-      // トレリスト
       const workoutList = document.getElementById('workoutList');
       workoutList.innerHTML = (todayData.workouts || []).map((w, index) => `
         <li>
@@ -153,10 +156,9 @@
       `).join('');
 
       localStorage.setItem('myFitData', JSON.stringify(data));
-      updateChart();
+      updateCharts();
     }
 
-    // ① 体重・体脂肪
     function saveBodyData() {
       data[today].weight = document.getElementById('weightInput').value;
       data[today].fat = document.getElementById('fatInput').value;
@@ -172,7 +174,6 @@
       }
     }
 
-    // ② 食事・摂取カロリー
     function saveCalorie() {
       data[today].calories = document.getElementById('calorieInput').value;
       render();
@@ -205,7 +206,6 @@
       }
     }
 
-    // ③ 運動・消費カロリー
     function saveBurnCalorie() {
       data[today].burnCalories = document.getElementById('burnCalorieInput').value;
       render();
@@ -244,36 +244,53 @@
       }
     }
 
-    // グラフ更新
-    function updateChart() {
+    function updateCharts() {
       const dates = Object.keys(data).sort().slice(-7);
       const weights = dates.map(d => data[d].weight || null);
       const fats = dates.map(d => data[d].fat || null);
       const calories = dates.map(d => data[d].calories || null);
       const burnCalories = dates.map(d => data[d].burnCalories || null);
 
-      const ctx = document.getElementById('fitChart').getContext('2d');
-      if (myChart) myChart.destroy();
-
-      myChart = new Chart(ctx, {
+      // 1. 体重・体脂肪グラフ
+      if (chartW) chartW.destroy();
+      chartW = new Chart(document.getElementById('chartWeight').getContext('2d'), {
         type: 'line',
         data: {
           labels: dates,
           datasets: [
             { label: '体重 (kg)', data: weights, borderColor: '#27ae60', yAxisID: 'y' },
-            { label: '体脂肪 (%)', data: fats, borderColor: '#e67e22', yAxisID: 'y' },
-            { label: '摂取kcal', data: calories, borderColor: '#2980b9', yAxisID: 'y1' },
-            { label: '消費kcal', data: burnCalories, borderColor: '#8e44ad', yAxisID: 'y1', borderDash: [5, 5] }
+            { label: '体脂肪 (%)', data: fats, borderColor: '#e67e22', yAxisID: 'y1' }
           ]
         },
         options: {
-          responsive: true,
-          maintainAspectRatio: false,
+          responsive: true, maintainAspectRatio: false,
           scales: {
-            y: { type: 'linear', position: 'left', title: { display: true, text: '体重/体脂肪' } },
-            y1: { type: 'linear', position: 'right', grid: { drawOnChartArea: false }, title: { display: true, text: 'kcal' } }
+            y: { type: 'linear', position: 'left', title: { display: true, text: 'kg' } },
+            y1: { type: 'linear', position: 'right', grid: { drawOnChartArea: false }, title: { display: true, text: '%' } }
           }
         }
+      });
+
+      // 2. 摂取カロリーグラフ
+      if (chartC) chartC.destroy();
+      chartC = new Chart(document.getElementById('chartCalorie').getContext('2d'), {
+        type: 'line',
+        data: {
+          labels: dates,
+          datasets: [{ label: '摂取 (kcal)', data: calories, borderColor: '#2980b9', backgroundColor: 'rgba(41,128,185,0.1)', fill: true }]
+        },
+        options: { responsive: true, maintainAspectRatio: false }
+      });
+
+      // 3. 消費カロリーグラフ
+      if (chartB) chartB.destroy();
+      chartB = new Chart(document.getElementById('chartBurn').getContext('2d'), {
+        type: 'line',
+        data: {
+          labels: dates,
+          datasets: [{ label: '消費 (kcal)', data: burnCalories, borderColor: '#8e44ad', backgroundColor: 'rgba(142,68,173,0.1)', fill: true }]
+        },
+        options: { responsive: true, maintainAspectRatio: false }
       });
     }
 
