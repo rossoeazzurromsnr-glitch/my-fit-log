@@ -10,7 +10,7 @@
     h1 { text-align: center; font-size: 1.2rem; color: #2c3e50; margin-bottom: 4px; }
     .date-badge { text-align: center; font-weight: bold; margin-bottom: 12px; color: #7f8c8d; font-size: 0.9rem; }
     
-    /* タブ切り替えボタン（2つに簡素化） */
+    /* タブ切り替え */
     .tab-container { display: flex; gap: 4px; margin-bottom: 16px; background: #e0e6ed; padding: 4px; border-radius: 10px; }
     .tab-btn { flex: 1; padding: 10px 4px; border: none; background: transparent; font-weight: bold; font-size: 0.85rem; color: #555; border-radius: 8px; cursor: pointer; transition: 0.2s; }
     .tab-btn.active { background: white; color: #27ae60; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
@@ -27,17 +27,18 @@
     .period-btn.active { background: #2c3e50; color: white; }
 
     .input-row { display: flex; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; }
-    input, select, button { padding: 10px; border-radius: 6px; border: 1px solid #ccc; font-size: 0.9rem; box-sizing: border-box; }
-    input[type="text"], select { flex: 1; min-width: 80px; }
+    input, button { padding: 10px; border-radius: 6px; border: 1px solid #ccc; font-size: 0.9rem; box-sizing: border-box; }
+    input[type="text"] { flex: 1; min-width: 80px; }
     button { background: #27ae60; color: white; border: none; font-weight: bold; cursor: pointer; min-width: 60px; }
     button:hover { background: #219150; }
-    .btn-delete { background: #e74c3c; padding: 4px 8px; font-size: 0.75rem; }
+    .btn-delete { background: #e74c3c; padding: 4px 8px; font-size: 0.75rem; border-radius: 4px; }
     
-    /* トレーニング記録のカード形式 */
-    .workout-card { background: #fafbfc; border: 1px solid #e1e4e8; border-radius: 8px; padding: 10px; margin-bottom: 8px; }
-    .workout-header { display: flex; justify-content: space-between; align-items: center; font-weight: bold; color: #2c3e50; margin-bottom: 6px; font-size: 0.95rem; }
-    .set-list { font-size: 0.85rem; color: #555; margin: 0; padding-left: 16px; }
-    .set-list li { padding: 2px 0; border: none; }
+    /* ノート風テーブルスタイル */
+    .note-card { background: #fff; border: 1px solid #dcdde1; border-radius: 8px; padding: 12px; margin-bottom: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+    .note-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #27ae60; padding-bottom: 4px; margin-bottom: 8px; font-weight: bold; color: #2c3e50; }
+    .note-table { width: 100%; border-collapse: collapse; margin-top: 6px; font-size: 0.85rem; }
+    .note-table th, .note-table td { border: 1px solid #e1e4e8; padding: 6px 8px; text-align: center; }
+    .note-table th { background: #f8f9fa; color: #555; font-weight: 600; }
 
     .chart-container { position: relative; height: 190px; width: 100%; margin-top: 10px; }
   </style>
@@ -50,10 +51,10 @@
   <!-- タブボタン -->
   <div class="tab-container">
     <button class="tab-btn active" onclick="switchTab(0)">⚖️ 体重・体脂肪</button>
-    <button class="tab-btn" onclick="switchTab(1)">🏋️ 筋トレ記録</button>
+    <button class="tab-btn" onclick="switchTab(1)">📓 筋トレノート</button>
   </div>
 
-  <!-- 項目1: 体重・体脂肪率 -->
+  <!-- タブ1: 体重・体脂肪率 -->
   <div id="tab0" class="tab-content active">
     <div class="card">
       <h2>⚖️ 体重・体脂肪率の記録</h2>
@@ -77,10 +78,10 @@
     </div>
   </div>
 
-  <!-- 項目2: 筋トレ記録（セット単位） -->
+  <!-- タブ2: 筋トレノート -->
   <div id="tab1" class="tab-content">
     <div class="card">
-      <h2>🏋️ トレーニング入力</h2>
+      <h2>✏️ セット入力</h2>
       <div class="input-row">
         <input type="text" id="workoutNameInput" placeholder="種目名 (例: ベンチプレス)">
       </div>
@@ -89,30 +90,16 @@
         <input type="text" inputmode="numeric" id="repsValInput" placeholder="回数 (rep)">
         <button onclick="addSetToWorkout()">セット追加</button>
       </div>
-      <div id="currentWorkoutPreview" style="background: #f8f9fa; padding: 8px; border-radius: 6px; margin-top: 8px; font-size: 0.85rem; display:none;">
+      <div id="currentWorkoutPreview" style="background: #f8f9fa; padding: 10px; border-radius: 6px; margin-top: 8px; font-size: 0.85rem; display:none;">
         <div style="font-weight: bold; margin-bottom: 4px;" id="previewTitle"></div>
         <ul id="previewSets" style="margin:0; padding-left:16px;"></ul>
-        <button style="background: #27ae60; width: 100%; margin-top: 8px;" onclick="saveWorkoutSession()">この種目を保存する</button>
+        <button style="background: #27ae60; width: 100%; margin-top: 8px;" onclick="saveWorkoutSession()">ノートに記入する</button>
       </div>
     </div>
 
     <div class="card">
-      <h2>📝 本日のメニュー一覧</h2>
+      <h2>📖 本日の記録ノート</h2>
       <div id="todayWorkoutList"></div>
-    </div>
-
-    <!-- 種目別の成長グラフ -->
-    <div class="card">
-      <h2>📈 筋トレ成長グラフ（最高重量）</h2>
-      <div class="input-row" style="margin-bottom: 10px;">
-        <select id="exerciseSelect" onchange="updateWorkoutGrowthChart()"></select>
-      </div>
-      <div class="period-container">
-        <button class="period-btn active" onclick="setPeriod('growth', 7, this)">1週間</button>
-        <button class="period-btn" onclick="setPeriod('growth', 30, this)">1ヶ月</button>
-        <button class="period-btn" onclick="setPeriod('growth', 365, this)">1年</button>
-      </div>
-      <div class="chart-container"><canvas id="chartGrowth"></canvas></div>
     </div>
   </div>
 
@@ -123,12 +110,11 @@
     let data = JSON.parse(localStorage.getItem('myFitData')) || {};
     if (!data[today]) data[today] = { weight: '', fat: '', workouts: [] };
 
-    // 現在入力中の仮セット保持用
     let activeWorkoutName = '';
     let activeSets = [];
 
-    let periods = { weight: 7, growth: 7 };
-    let chartW = null, chartG = null;
+    let periods = { weight: 7 };
+    let chartW = null;
 
     function switchTab(index) {
       const tabs = document.querySelectorAll('.tab-content');
@@ -152,57 +138,43 @@
       const todayData = data[today];
       
       document.getElementById('weightInput').value = todayData.weight || '';
+      document.getElementById('fatInput').value = todayData.fat || '';
 
-      // 本日の筋トレ一覧描画
+      // 本日の筋トレノート描画
       const container = document.getElementById('todayWorkoutList');
       if (!todayData.workouts || todayData.workouts.length === 0) {
-        container.innerHTML = '<p style="color: #888; font-size: 0.85rem; text-align: center; margin: 8px 0;">今日の記録はまだありません</p>';
+        container.innerHTML = '<p style="color: #888; font-size: 0.85rem; text-align: center; margin: 12px 0;">まだノートの記録はありません</p>';
       } else {
         container.innerHTML = todayData.workouts.map((w, wIndex) => `
-          <div class="workout-card">
-            <div class="workout-header">
-              <span>${w.name}</span>
+          <div class="note-card">
+            <div class="note-header">
+              <span>📌 ${w.name}</span>
               <button class="btn-delete" onclick="deleteWorkoutSession(${wIndex})">削除</button>
             </div>
-            <ul class="set-list">
-              ${w.sets.map((s, sIndex) => `<li><b>${sIndex + 1}set</b>: ${s.weight}kg × ${s.reps}回</li>`).join('')}
-            </ul>
+            <table class="note-table">
+              <thead>
+                <tr>
+                  <th>セット</th>
+                  <th>重量 (kg)</th>
+                  <th>回数 (回)</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${w.sets.map((s, sIndex) => `
+                  <tr>
+                    <td>${sIndex + 1} set</td>
+                    <td>${s.weight} kg</td>
+                    <td>${s.reps} 回</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
           </div>
         `).join('');
       }
 
-      updateExerciseDropdown();
       localStorage.setItem('myFitData', JSON.stringify(data));
       updateCharts();
-    }
-
-    function updateExerciseDropdown() {
-      const select = document.getElementById('exerciseSelect');
-      const currentSelected = select.value;
-      
-      const exercises = new Set();
-      Object.values(data).forEach(day => {
-        if (day.workouts) {
-          day.workouts.forEach(w => exercises.add(w.name));
-        }
-      });
-
-      select.innerHTML = '';
-      if (exercises.size === 0) {
-        select.innerHTML = '<option value="">種目がありません</option>';
-        return;
-      }
-
-      exercises.forEach(ex => {
-        const opt = document.createElement('option');
-        opt.value = ex;
-        opt.innerText = ex;
-        select.appendChild(opt);
-      });
-
-      if (exercises.has(currentSelected)) {
-        select.value = currentSelected;
-      }
     }
 
     function saveBodyData() {
@@ -220,20 +192,13 @@
       }
     }
 
-    // 筋トレ：セットを一時追加
     function addSetToWorkout() {
       const name = document.getElementById('workoutNameInput').value.trim();
       const weight = document.getElementById('weightValInput').value.trim();
       const reps = document.getElementById('repsValInput').value.trim();
 
-      if (!name) {
-        alert('種目名を入力してください');
-        return;
-      }
-      if (!weight || !reps) {
-        alert('重量と回数を入力してください');
-        return;
-      }
+      if (!name) { alert('種目名を入力してください'); return; }
+      if (!weight || !reps) { alert('重量と回数を入力してください'); return; }
 
       if (activeWorkoutName !== name) {
         activeWorkoutName = name;
@@ -242,16 +207,13 @@
 
       activeSets.push({ weight: weight, reps: reps });
 
-      // プレビュー表示
       document.getElementById('currentWorkoutPreview').style.display = 'block';
-      document.getElementById('previewTitle').innerText = `入力中: ${activeWorkoutName}`;
+      document.getElementById('previewTitle').innerText = `記入中: ${activeWorkoutName}`;
       document.getElementById('previewSets').innerHTML = activeSets.map((s, i) => `<li>${i + 1}set: ${s.weight}kg × ${s.reps}回</li>`).join('');
 
-      // 入力欄クリア（重量は前回の値を残すと便利かもですが、一旦回数だけクリア）
       document.getElementById('repsValInput').value = '';
     }
 
-    // 筋トレ：セッション全体を保存
     function saveWorkoutSession() {
       if (activeSets.length === 0) return;
 
@@ -261,7 +223,6 @@
         sets: [...activeSets]
       });
 
-      // リセット
       activeSets = [];
       activeWorkoutName = '';
       document.getElementById('currentWorkoutPreview').style.display = 'none';
@@ -270,7 +231,6 @@
       document.getElementById('repsValInput').value = '';
 
       render();
-      alert('トレーニングを保存しました！');
     }
 
     function deleteWorkoutSession(index) {
@@ -312,39 +272,6 @@
             y1: { type: 'linear', position: 'right', grid: { drawOnChartArea: false }, title: { display: true, text: '%' } }
           }
         }
-      });
-
-      updateWorkoutGrowthChart();
-    }
-
-    function updateWorkoutGrowthChart() {
-      const selectedEx = document.getElementById('exerciseSelect').value;
-      const datesG = getDates(periods.growth);
-      
-      // 各日の「その種目の最高重量」を抽出
-      const maxWeightData = datesG.map(d => {
-        if (!data[d] || !data[d].workouts) return null;
-        const matches = data[d].workouts.filter(w => w.name === selectedEx);
-        if (matches.length === 0) return null;
-        
-        let maxW = 0;
-        matches.forEach(m => {
-          m.sets.forEach(s => {
-            const wNum = parseFloat(s.weight) || 0;
-            if (wNum > maxW) maxW = wNum;
-          });
-        });
-        return maxW > 0 ? maxW : null;
-      });
-
-      if (chartG) chartG.destroy();
-      chartG = new Chart(document.getElementById('chartGrowth').getContext('2d'), {
-        type: 'line',
-        data: {
-          labels: datesG.map(d => d.slice(5)),
-          datasets: [{ label: `${selectedEx || '種目'} (最高重量kg)`, data: maxWeightData, borderColor: '#e74c3c', backgroundColor: 'rgba(231,76,60,0.1)', fill: true, tension: 0.1 }]
-        },
-        options: { responsive: true, maintainAspectRatio: false }
       });
     }
 
