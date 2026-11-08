@@ -20,16 +20,22 @@
 
     .card { background: white; border-radius: 12px; padding: 16px; margin-bottom: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
     .card h2 { font-size: 1rem; margin-top: 0; color: #34495e; border-bottom: 2px solid #ecf0f1; padding-bottom: 6px; }
+    
+    /* 期間切替ボタン */
+    .period-container { display: flex; gap: 4px; margin-bottom: 10px; background: #f1f2f6; padding: 3px; border-radius: 6px; }
+    .period-btn { flex: 1; padding: 4px; border: none; background: transparent; font-size: 0.75rem; font-weight: bold; color: #666; border-radius: 4px; cursor: pointer; }
+    .period-btn.active { background: #2c3e50; color: white; }
+
     .input-row { display: flex; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; }
-    input, button { padding: 10px; border-radius: 6px; border: 1px solid #ccc; font-size: 0.9rem; box-sizing: border-box; }
-    input[type="number"], input[type="text"] { flex: 1; min-width: 80px; }
+    input, select, button { padding: 10px; border-radius: 6px; border: 1px solid #ccc; font-size: 0.9rem; box-sizing: border-box; }
+    input[type="text"], select { flex: 1; min-width: 80px; }
     button { background: #27ae60; color: white; border: none; font-weight: bold; cursor: pointer; min-width: 60px; }
     button:hover { background: #219150; }
     .btn-edit { background: #f39c12; padding: 4px 8px; font-size: 0.75rem; margin-left: 4px; }
     .btn-delete { background: #e74c3c; padding: 4px 8px; font-size: 0.75rem; margin-left: 4px; }
     ul { list-style: none; padding: 0; margin: 0; }
     li { padding: 8px 0; border-bottom: 1px dashed #eee; font-size: 0.9rem; display: flex; justify-content: space-between; align-items: center; }
-    .chart-container { position: relative; height: 180px; width: 100%; margin-top: 10px; }
+    .chart-container { position: relative; height: 190px; width: 100%; margin-top: 10px; }
     .action-btns { display: flex; gap: 4px; }
   </style>
 </head>
@@ -50,8 +56,8 @@
     <div class="card">
       <h2>⚖️ 体重・体脂肪率の記録</h2>
       <div class="input-row">
-        <input type="number" id="weightInput" step="0.1" placeholder="体重 (kg)">
-        <input type="number" id="fatInput" step="0.1" placeholder="体脂肪 (%)">
+        <input type="text" inputmode="decimal" id="weightInput" placeholder="体重 (kg)">
+        <input type="text" inputmode="decimal" id="fatInput" placeholder="体脂肪 (%)">
       </div>
       <div style="display: flex; gap: 8px;">
         <button style="flex: 1;" onclick="saveBodyData()">保存</button>
@@ -60,6 +66,11 @@
     </div>
     <div class="card">
       <h2>📈 体重・体脂肪率の推移</h2>
+      <div class="period-container">
+        <button class="period-btn active" onclick="setPeriod('weight', 7, this)">1週間</button>
+        <button class="period-btn" onclick="setPeriod('weight', 30, this)">1ヶ月</button>
+        <button class="period-btn" onclick="setPeriod('weight', 365, this)">1年</button>
+      </div>
       <div class="chart-container"><canvas id="chartWeight"></canvas></div>
     </div>
   </div>
@@ -69,8 +80,8 @@
     <div class="card">
       <h2>🥗 食事メモ & 摂取カロリー</h2>
       <div class="input-row">
-        <input type="number" id="calorieInput" step="10" placeholder="本日の総摂取カロリー (kcal)">
-        <button onclick="saveCalorie()">カロリー保存</button>
+        <input type="text" inputmode="numeric" id="calorieInput" placeholder="総摂取カロリー (kcal)">
+        <button onclick="saveCalorie()">保存</button>
       </div>
       <div class="input-row" style="margin-top: 12px;">
         <input type="text" id="mealInput" placeholder="食事メモ (例: 胸肉、さつまいも)">
@@ -80,6 +91,11 @@
     </div>
     <div class="card">
       <h2>📈 摂取カロリーの推移</h2>
+      <div class="period-container">
+        <button class="period-btn active" onclick="setPeriod('calorie', 7, this)">1週間</button>
+        <button class="period-btn" onclick="setPeriod('calorie', 30, this)">1ヶ月</button>
+        <button class="period-btn" onclick="setPeriod('calorie', 365, this)">1年</button>
+      </div>
       <div class="chart-container"><canvas id="chartCalorie"></canvas></div>
     </div>
   </div>
@@ -89,19 +105,40 @@
     <div class="card">
       <h2>🏋️ 運動記録 & 消費カロリー</h2>
       <div class="input-row">
-        <input type="number" id="burnCalorieInput" step="10" placeholder="本日の総消費カロリー (kcal)">
-        <button onclick="saveBurnCalorie()">カロリー保存</button>
+        <input type="text" inputmode="numeric" id="burnCalorieInput" placeholder="総消費カロリー (kcal)">
+        <button onclick="saveBurnCalorie()">保存</button>
       </div>
       <div class="input-row" style="margin-top: 12px;">
         <input type="text" id="workoutNameInput" placeholder="種目名 (例: 腕立て)">
-        <input type="number" id="workoutRepsInput" placeholder="レップ数/回">
+        <input type="text" inputmode="numeric" id="workoutRepsInput" placeholder="レップ数">
         <button onclick="addWorkout()">追加</button>
       </div>
       <ul id="workoutList"></ul>
     </div>
+
+    <!-- 消費カロリーグラフ -->
     <div class="card">
       <h2>📈 消費カロリーの推移</h2>
+      <div class="period-container">
+        <button class="period-btn active" onclick="setPeriod('burn', 7, this)">1週間</button>
+        <button class="period-btn" onclick="setPeriod('burn', 30, this)">1ヶ月</button>
+        <button class="period-btn" onclick="setPeriod('burn', 365, this)">1年</button>
+      </div>
       <div class="chart-container"><canvas id="chartBurn"></canvas></div>
+    </div>
+
+    <!-- 種目別の成長（レップ数）グラフ -->
+    <div class="card">
+      <h2>💪 種目別トレーニングの成長グラフ</h2>
+      <div class="input-row" style="margin-bottom: 10px;">
+        <select id="exerciseSelect" onchange="updateWorkoutGrowthChart()"></select>
+      </div>
+      <div class="period-container">
+        <button class="period-btn active" onclick="setPeriod('growth', 7, this)">1週間</button>
+        <button class="period-btn" onclick="setPeriod('growth', 30, this)">1ヶ月</button>
+        <button class="period-btn" onclick="setPeriod('growth', 365, this)">1年</button>
+      </div>
+      <div class="chart-container"><canvas id="chartGrowth"></canvas></div>
     </div>
   </div>
 
@@ -112,7 +149,9 @@
     let data = JSON.parse(localStorage.getItem('myFitData')) || {};
     if (!data[today]) data[today] = { weight: '', fat: '', calories: '', burnCalories: '', meals: [], workouts: [] };
 
-    let chartW = null, chartC = null, chartB = null;
+    // 各グラフの表示期間（デフォルト7日）
+    let periods = { weight: 7, calorie: 7, burn: 7, growth: 7 };
+    let chartW = null, chartC = null, chartB = null, chartG = null;
 
     function switchTab(index) {
       const tabs = document.querySelectorAll('.tab-content');
@@ -121,8 +160,16 @@
         tab.classList.toggle('active', i === index);
         btns[i].classList.toggle('active', i === index);
       });
-      // タブ切り替え時にグラフ描画を再調整
       setTimeout(updateCharts, 50);
+    }
+
+    function setPeriod(type, days, btn) {
+      periods[type] = days;
+      // ボタンのアクティブ切り替え
+      const parent = btn.parentElement;
+      parent.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      updateCharts();
     }
 
     function render() {
@@ -155,8 +202,39 @@
         </li>
       `).join('');
 
+      updateExerciseDropdown();
       localStorage.setItem('myFitData', JSON.stringify(data));
       updateCharts();
+    }
+
+    function updateExerciseDropdown() {
+      const select = document.getElementById('exerciseSelect');
+      const currentSelected = select.value;
+      
+      // 登録されているすべての種目を重複なく抽出
+      const exercises = new Set();
+      Object.values(data).forEach(day => {
+        if (day.workouts) {
+          day.workouts.forEach(w => exercises.add(w.name));
+        }
+      });
+
+      select.innerHTML = '';
+      if (exercises.size === 0) {
+        select.innerHTML = '<option value="">種目がありません</option>';
+        return;
+      }
+
+      exercises.forEach(ex => {
+        const opt = document.createElement('option');
+        opt.value = ex;
+        opt.innerText = ex;
+        select.appendChild(opt);
+      });
+
+      if (exercises.has(currentSelected)) {
+        select.value = currentSelected;
+      }
     }
 
     function saveBodyData() {
@@ -213,8 +291,8 @@
     }
 
     function addWorkout() {
-      const name = document.getElementById('workoutNameInput').value;
-      const reps = document.getElementById('workoutRepsInput').value;
+      const name = document.getElementById('workoutNameInput').value.trim();
+      const reps = document.getElementById('workoutRepsInput').value.trim();
       if (name && reps) {
         if (!data[today].workouts) data[today].workouts = [];
         data[today].workouts.push({ name: name, reps: reps });
@@ -244,19 +322,28 @@
       }
     }
 
-    function updateCharts() {
-      const dates = Object.keys(data).sort().slice(-7);
-      const weights = dates.map(d => data[d].weight || null);
-      const fats = dates.map(d => data[d].fat || null);
-      const calories = dates.map(d => data[d].calories || null);
-      const burnCalories = dates.map(d => data[d].burnCalories || null);
+    // 指定日数の日付配列を生成
+    function getDates(days) {
+      const arr = [];
+      for (let i = days - 1; i >= 0; i--) {
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+        arr.push(d.toISOString().split('T')[0]);
+      }
+      return arr;
+    }
 
-      // 1. 体重・体脂肪グラフ
+    function updateCharts() {
+      // 1. 体重・体脂肪
+      const datesW = getDates(periods.weight);
+      const weights = datesW.map(d => data[d] ? data[d].weight || null : null);
+      const fats = datesW.map(d => data[d] ? data[d].fat || null : null);
+
       if (chartW) chartW.destroy();
       chartW = new Chart(document.getElementById('chartWeight').getContext('2d'), {
         type: 'line',
         data: {
-          labels: dates,
+          labels: datesW.map(d => d.slice(5)), // MM-DD形式
           datasets: [
             { label: '体重 (kg)', data: weights, borderColor: '#27ae60', yAxisID: 'y' },
             { label: '体脂肪 (%)', data: fats, borderColor: '#e67e22', yAxisID: 'y1' }
@@ -271,24 +358,55 @@
         }
       });
 
-      // 2. 摂取カロリーグラフ
+      // 2. 摂取カロリー
+      const datesC = getDates(periods.calorie);
+      const calories = datesC.map(d => data[d] ? data[d].calories || null : null);
+
       if (chartC) chartC.destroy();
       chartC = new Chart(document.getElementById('chartCalorie').getContext('2d'), {
         type: 'line',
         data: {
-          labels: dates,
+          labels: datesC.map(d => d.slice(5)),
           datasets: [{ label: '摂取 (kcal)', data: calories, borderColor: '#2980b9', backgroundColor: 'rgba(41,128,185,0.1)', fill: true }]
         },
         options: { responsive: true, maintainAspectRatio: false }
       });
 
-      // 3. 消費カロリーグラフ
+      // 3. 消費カロリー
+      const datesB = getDates(periods.burn);
+      const burnCalories = datesB.map(d => data[d] ? data[d].burnCalories || null : null);
+
       if (chartB) chartB.destroy();
       chartB = new Chart(document.getElementById('chartBurn').getContext('2d'), {
         type: 'line',
         data: {
-          labels: dates,
+          labels: datesB.map(d => d.slice(5)),
           datasets: [{ label: '消費 (kcal)', data: burnCalories, borderColor: '#8e44ad', backgroundColor: 'rgba(142,68,173,0.1)', fill: true }]
+        },
+        options: { responsive: true, maintainAspectRatio: false }
+      });
+
+      updateWorkoutGrowthChart();
+    }
+
+    function updateWorkoutGrowthChart() {
+      const selectedEx = document.getElementById('exerciseSelect').value;
+      const datesG = getDates(periods.growth);
+      
+      const repsData = datesG.map(d => {
+        if (!data[d] || !data[d].workouts) return null;
+        // 該当する種目のレップ数を合計（またはその日の最大値など）
+        const match = data[d].workouts.filter(w => w.name === selectedEx);
+        if (match.length === 0) return null;
+        return match.reduce((sum, w) => sum + Number(w.reps), 0);
+      });
+
+      if (chartG) chartG.destroy();
+      chartG = new Chart(document.getElementById('chartGrowth').getContext('2d'), {
+        type: 'line',
+        data: {
+          labels: datesG.map(d => d.slice(5)),
+          datasets: [{ label: `${selectedEx || '種目'} (回数)`, data: repsData, borderColor: '#e74c3c', backgroundColor: 'rgba(231,76,60,0.1)', fill: true, tension: 0.1 }]
         },
         options: { responsive: true, maintainAspectRatio: false }
       });
