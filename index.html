@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>マイフィットログ</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; max-width: 500px; margin: 0 auto; padding: 16px; background: #f4f6f8; color: #333; }
+    h1 { text-align: center; font-size: 1.2rem; color: #2c3e50; }
+    .card { background: white; border-radius: 12px; padding: 16px; margin-bottom: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+    .card h2 { font-size: 1rem; margin-top: 0; color: #34495e; border-bottom: 2px solid #ecf0f1; padding-bottom: 6px; }
+    .input-group { display: flex; gap: 8px; margin-bottom: 8px; }
+    input, button { padding: 10px; border-radius: 6px; border: 1px solid #ccc; font-size: 0.9rem; }
+    input[type="number"], input[type="text"] { flex: 1; }
+    button { background: #27ae60; color: white; border: none; font-weight: bold; cursor: pointer; }
+    button:hover { background: #219150; }
+    ul { list-style: none; padding: 0; margin: 0; }
+    li { padding: 8px 0; border-bottom: 1px dashed #eee; font-size: 0.9rem; display: flex; justify-content: space-between; }
+    .date-badge { text-align: center; font-weight: bold; margin-bottom: 12px; color: #7f8c8d; }
+  </style>
+</head>
+<body>
+
+  <h1>マイフィットログ</h1>
+  <div class="date-badge" id="todayDate"></div>
+
+  <!-- 体重管理 -->
+  <div class="card">
+    <h2>⚖️ 体重記録</h2>
+    <div class="input-group">
+      <input type="number" id="weightInput" step="0.1" placeholder="例: 68.5">
+      <button onclick="addWeight()">記録</button>
+    </div>
+    <div id="weightDisplay" style="font-size: 1.1rem; font-weight: bold; margin-top: 8px;"></div>
+  </div>
+
+  <!-- 食事記録 -->
+  <div class="card">
+    <h2>🥗 食事記録（ざっくり）</h2>
+    <div class="input-group">
+      <input type="text" id="mealInput" placeholder="例: 胸肉、卵、さつまいも">
+      <button onclick="addMeal()">追加</button>
+    </div>
+    <ul id="mealList"></ul>
+  </div>
+
+  <!-- 筋トレ・運動記録 -->
+  <div class="card">
+    <h2>🏋️ トレーニング</h2>
+    <div class="input-group">
+      <input type="text" id="workoutInput" placeholder="例: 自重トレ・ステッパー30分">
+      <button onclick="addWorkout()">追加</button>
+    </div>
+    <ul id="workoutList"></ul>
+  </div>
+
+  <script>
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('todayDate').innerText = `今日: ${today}`;
+
+    let data = JSON.parse(localStorage.getItem('myFitData')) || {};
+    if (!data[today]) data[today] = { weight: '', meals: [], workouts: [] };
+
+    function render() {
+      const todayData = data[today];
+      document.getElementById('weightDisplay').innerText = todayData.weight ? `今日の体重: ${todayData.weight} kg` : '未記録';
+      
+      const mealList = document.getElementById('mealList');
+      mealList.innerHTML = todayData.meals.map(m => `<li><span>${m}</span></li>`).join('');
+
+      const workoutList = document.getElementById('workoutList');
+      workoutList.innerHTML = todayData.workouts.map(w => `<li><span>${w}</span></li>`).join('');
+
+      localStorage.setItem('myFitData', JSON.stringify(data));
+    }
+
+    function addWeight() {
+      const val = document.getElementById('weightInput').value;
+      if (val) { data[today].weight = val; render(); document.getElementById('weightInput').value = ''; }
+    }
+
+    function addMeal() {
+      const val = document.getElementById('mealInput').value;
+      if (val) { data[today].meals.push(val); render(); document.getElementById('mealInput').value = ''; }
+    }
+
+    function addWorkout() {
+      const val = document.getElementById('workoutInput').value;
+      if (val) { data[today].workouts.push(val); render(); document.getElementById('workoutInput').value = ''; }
+    }
+
+    render();
+  </script>
+</body>
+</html>
